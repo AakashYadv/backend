@@ -167,3 +167,6 @@ def download_file_secure(token: str):
         return FileResponse(path, media_type=mimetypes.guess_type(meta.filename)[0], filename=meta.filename)
     except JWTError:
         raise HTTPException(status_code=403, detail="Invalid or expired token")
+@app.get("/")
+def root():
+    return {"message": "✅ Secure File Sharing API is live!"}
