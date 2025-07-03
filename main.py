@@ -1,3 +1,6 @@
+# Ensure the following modules are installed:
+# pip install fastapi uvicorn python-jose[cryptography] passlib[bcrypt] python-multipart
+
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +28,17 @@ UPLOAD_DIR = "uploads"
 
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+
+# Temporary hardcoded Ops user (for testing purpose)
+from collections import namedtuple
+UserModel = namedtuple("UserModel", ["email", "name", "password", "role", "verified"])
+USERS_DB["ops@example.com"] = UserModel(
+    email="ops@example.com",
+    name="Ops User",
+    password=CryptContext(schemes=["bcrypt"], deprecated="auto").hash("ops123"),
+    role="ops",
+    verified=True
+)
 
 app = FastAPI()
 
@@ -124,7 +138,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @app.post("/upload-file")
 def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
-
     if current_user.role != "ops":
         raise HTTPException(status_code=403, detail="Not allowed")
     ext = os.path.splitext(file.filename)[1]
@@ -167,6 +180,7 @@ def download_file_secure(token: str):
         return FileResponse(path, media_type=mimetypes.guess_type(meta.filename)[0], filename=meta.filename)
     except JWTError:
         raise HTTPException(status_code=403, detail="Invalid or expired token")
+
 @app.get("/")
 def root():
     return {"message": "✅ Secure File Sharing API is live!"}
